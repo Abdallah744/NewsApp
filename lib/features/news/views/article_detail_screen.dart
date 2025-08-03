@@ -1,4 +1,4 @@
-// ignore_for_file: unnecessary_null_comparison, use_super_parameters
+// ignore_for_file: unnecessary_null_comparison, use_super_parameters, deprecated_member_use
 
 import 'package:flutter/material.dart';
 import 'package:news_app/domain/entities/article.dart';

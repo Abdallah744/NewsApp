@@ -1,4 +1,4 @@
-// ignore_for_file: unnecessary_null_comparison
+// ignore_for_file: unnecessary_null_comparison, deprecated_member_use
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -132,20 +132,7 @@ class _NewsListScreenState extends State<NewsListScreen> with SingleTickerProvid
             const SizedBox(width: 8),
           ],
         ),
-        body: RefreshIndicator(
-          onRefresh: () => _viewModel.refresh(),
-          color: Theme.of(context).colorScheme.primary,
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              SliverToBoxAdapter(child: _buildSearchBar()),
-              SliverToBoxAdapter(child: _buildCategoryChips()),
-              const SliverToBoxAdapter(child: SizedBox(height: 8)),
-              _buildNewsList(),
-            ],
-          ),
-        ),
+        body: _buildMainContent(),
       ),
     );
   }
@@ -277,15 +264,15 @@ class _NewsListScreenState extends State<NewsListScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildNewsList() {
+  Widget _buildMainContent() {
     return Consumer<NewsViewModel>(
       builder: (context, viewModel, _) {
-        // Show loading indicator only on initial load
+        // Handle loading state
         if (viewModel.isLoading && viewModel.articles.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        // Show error message if there's an error and no articles to display
+        // Handle error state
         if (viewModel.error != null && viewModel.articles.isEmpty) {
           return Center(
             child: Padding(
@@ -333,6 +320,7 @@ class _NewsListScreenState extends State<NewsListScreen> with SingleTickerProvid
           );
         }
 
+        // Handle empty state
         if (viewModel.articles.isEmpty) {
           return Center(
             child: Column(
@@ -364,29 +352,45 @@ class _NewsListScreenState extends State<NewsListScreen> with SingleTickerProvid
           );
         }
 
-        return ListView.builder(
-          controller: _scrollController,
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.only(top: 8, bottom: 24),
-          itemCount: viewModel.articles.length + (viewModel.isLoading ? 1 : 0),
-          itemBuilder: (context, index) {
-            if (index >= viewModel.articles.length) {
-              return Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Center(
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.0,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Theme.of(context).colorScheme.primary,
-                    ),
+        // Main content with CustomScrollView
+        return RefreshIndicator(
+          onRefresh: () => viewModel.refresh(),
+          color: Theme.of(context).colorScheme.primary,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          child: CustomScrollView(
+            controller: _scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(child: _buildSearchBar()),
+              SliverToBoxAdapter(child: _buildCategoryChips()),
+              const SliverToBoxAdapter(child: SizedBox(height: 8)),
+              SliverPadding(
+                padding: const EdgeInsets.only(bottom: 24),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      if (index >= viewModel.articles.length) {
+                        return Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.0,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+                      final article = viewModel.articles[index];
+                      return _buildArticleCard(article, index);
+                    },
+                    childCount: viewModel.articles.length + (viewModel.isLoading ? 1 : 0),
                   ),
                 ),
-              );
-            }
-
-            final article = viewModel.articles[index];
-            return _buildArticleCard(article, index);
-          },
+              ),
+            ],
+          ),
         );
       },
     );
